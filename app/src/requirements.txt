@@ -7,9 +7,7 @@ matplotlib
 numpy
 pydeck
 requests
-openai
 validators
 plotly
 seaborn
 scikit-learn
-shap

@@ -10,12 +10,9 @@ RUN apt-get update && apt-get install -y \
   pkg-config \
   && rm -rf /var/lib/apt/lists/*
 
-# RUN mkdir /requirements
-# COPY ./src/requirements.txt /requirements/requirements.txt
-
 COPY ./src/requirements.txt .
 
-RUN pip3 install -r requirements.txt
+RUN pip install -r requirements.txt
 
 EXPOSE 8501
 
