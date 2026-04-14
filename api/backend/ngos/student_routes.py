@@ -171,7 +171,6 @@ def get_student_experiences(student_id):
 
 # Add a new co-op experience for a student
 # Required fields: companyId, roleId, semester, year
-# Example: POST /stu/students/1/experiences with JSON body
 @students.route("/students/<int:student_id>/experiences", methods=["POST"])
 def add_experience(student_id):
     cursor = get_db().cursor(dictionary=True)
@@ -207,7 +206,6 @@ def add_experience(student_id):
 
 
 # Delete a co-op experience for a student
-# Example: DELETE /stu/students/1/experiences/3
 @students.route("/students/<int:student_id>/experiences/<int:experience_id>", methods=["DELETE"])
 def delete_experience(student_id, experience_id):
     cursor = get_db().cursor(dictionary=True)
@@ -230,4 +228,117 @@ def delete_experience(student_id, experience_id):
         cursor.close()
 
 
+# Get all outreach messages sent by a student
+@students.route("/students/<int:student_id>/outreach", methods=["GET"])
+def get_student_outreach(student_id):
+    cursor = get_db().cursor(dictionary=True)
+    try:
+        current_app.logger.info(f'GET /stu/students/{student_id}/outreach')
+ 
+        query = """
+            SELECT so.messageId, so.content, so.dateSent, so.responseStatus,
+                   u.firstName AS recipientFirstName, u.lastName AS recipientLastName
+            FROM STUDENTOUTREACH so
+            JOIN STUDENT s ON so.recipientId = s.studentId
+            JOIN USER u ON s.userId = u.userId
+            WHERE so.senderId = %s
+            ORDER BY so.dateSent DESC
+        """
+        cursor.execute(query, (student_id,))
+        messages = cursor.fetchall()
+ 
+        return jsonify(messages), 200
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
 
+
+# Send a new outreach message to another student
+# Required fields: recipientId, content
+@students.route("/students/<int:student_id>/outreach", methods=["POST"])
+def send_outreach(student_id):
+    cursor = get_db().cursor(dictionary=True)
+    try:
+        current_app.logger.info(f'POST /stu/students/{student_id}/outreach')
+        data = request.get_json()
+ 
+        required_fields = ["recipientId", "content"]
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+ 
+        query = """
+            INSERT INTO STUDENTOUTREACH (senderId, recipientId, content, dateSent, responseStatus)
+            VALUES (%s, %s, %s, NOW(), 'pending')
+        """
+        cursor.execute(query, (student_id, data["recipientId"], data["content"]))
+        get_db().commit()
+ 
+        return jsonify({"message": "Outreach message sent successfully",
+                        "messageId": cursor.lastrowid}), 201
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
+
+
+# Get all employer outreach messages received by a student
+@students.route("/students/<int:student_id>/employer-outreach", methods=["GET"])
+def get_employer_outreach(student_id):
+    cursor = get_db().cursor(dictionary=True)
+    try:
+        current_app.logger.info(f'GET /stu/students/{student_id}/employer-outreach')
+ 
+        query = """
+            SELECT eo.empMessageId, eo.content, eo.dateSent, eo.status,
+                   u.firstName AS employerFirstName, u.lastName AS employerLastName,
+                   c.companyName, e.jobTitle
+            FROM EMPLOYEROUTREACH eo
+            JOIN EMPLOYER e ON eo.employerId = e.employerId
+            JOIN USER u ON e.userId = u.userId
+            JOIN COMPANY c ON e.companyId = c.companyId
+            WHERE eo.studentId = %s
+            ORDER BY eo.dateSent DESC
+        """
+        cursor.execute(query, (student_id,))
+        messages = cursor.fetchall()
+ 
+        return jsonify(messages), 200
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
+
+# Update the status of an employer outreach message (accept/reject)
+@students.route("/students/<int:student_id>/employer-outreach/<int:message_id>", methods=["PUT"])
+def update_employer_outreach_status(student_id, message_id):
+    cursor = get_db().cursor(dictionary=True)
+    try:
+        current_app.logger.info(f'PUT /stu/students/{student_id}/employer-outreach/{message_id}')
+        data = request.get_json()
+ 
+        if "status" not in data:
+            return jsonify({"error": "Missing required field: status"}), 400
+ 
+        valid_statuses = ["pending", "accepted", "rejected"]
+        if data["status"] not in valid_statuses:
+            return jsonify({"error": f"Status must be one of: {valid_statuses}"}), 400
+ 
+        cursor.execute("""SELECT empMessageId FROM EMPLOYEROUTREACH
+                          WHERE empMessageId = %s AND studentId = %s""",
+                       (message_id, student_id))
+        if not cursor.fetchone():
+            return jsonify({"error": "Message not found"}), 404
+ 
+        cursor.execute("""UPDATE EMPLOYEROUTREACH SET status = %s
+                          WHERE empMessageId = %s""", (data["status"], message_id))
+        get_db().commit()
+ 
+        return jsonify({"message": "Outreach status updated successfully"}), 200
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
