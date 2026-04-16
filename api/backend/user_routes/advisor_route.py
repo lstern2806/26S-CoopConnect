@@ -219,13 +219,13 @@ def create_outreach():
     try:
         data = request.get_json()
         query = """
-            INSERT INTO STUDENTOUTREACH (senderId, recipientId, messageText)
+            INSERT INTO STUDENTOUTREACH (senderId, recipientId, content)
             VALUES (%s, %s, %s)
         """
         cursor.execute(query, (
             data["senderId"],
             data["recipientId"],
-            data["messageText"]
+            data.get("content")
         ))
         get_db().commit()
         return jsonify({"message": "Outreach created successfully", "messageId": cursor.lastrowid}), 201

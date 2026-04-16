@@ -8,6 +8,7 @@ services:
     volumes: ["./app/src:/appcode"]
     environment:
       - WATCHPACK_POLLING=true
+      - API_BASE_URL=http://web-api:4000
     ports:
       - 8501:8501
 

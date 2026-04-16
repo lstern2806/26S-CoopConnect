@@ -1,4 +1,5 @@
 import logging
+import os
 
 import requests
 import streamlit as st
@@ -9,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 st.set_page_config(layout="wide")
 SideBarLinks()
-API = "http://localhost:4000"
+API = os.getenv("API_BASE_URL", "http://localhost:4000")
 
 st.title("Search Students")
 gpa_cutoff = st.slider("Minimum GPA", min_value=0.0, max_value=4.0, value=3.5, step=0.1)

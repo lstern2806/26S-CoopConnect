@@ -1,4 +1,5 @@
 import logging
+import os
 
 import pandas as pd
 import requests
@@ -10,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 st.set_page_config(layout="wide")
 SideBarLinks()
-API = "http://localhost:4000"
+API = os.getenv("API_BASE_URL", "http://localhost:4000")
 
 st.title("Audit Logs")
 

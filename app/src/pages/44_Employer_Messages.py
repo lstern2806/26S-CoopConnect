@@ -1,4 +1,5 @@
 import logging
+import os
 
 import requests
 import streamlit as st
@@ -9,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 st.set_page_config(layout="wide")
 SideBarLinks()
-API = "http://localhost:4000"
+API = os.getenv("API_BASE_URL", "http://localhost:4000")
 student_id = st.session_state.get("student_id")
 
 st.title("Employer Messages")
