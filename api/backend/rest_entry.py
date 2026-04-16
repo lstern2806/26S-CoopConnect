@@ -7,6 +7,7 @@ from backend.db_connection import init_app as init_db
 from backend.simple.simple_routes import simple_routes
 from backend.ngos.ngo_routes import ngos
 from backend.ngos.student_routes import students
+from backend.ngos.employer_route import employer
 
 
 def create_app():
@@ -39,5 +40,6 @@ def create_app():
     app.register_blueprint(simple_routes)
     app.register_blueprint(ngos, url_prefix="/ngo")
     app.register_blueprint(students, url_prefix="/stu")
+    app.register_blueprint(employer, url_prefix="/emp")
 
     return app
