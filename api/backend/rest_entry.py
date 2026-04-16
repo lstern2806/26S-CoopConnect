@@ -8,6 +8,7 @@ from backend.simple.simple_routes import simple_routes
 from backend.ngos.ngo_routes import ngos
 from backend.ngos.student_routes import students
 from backend.ngos.employer_route import employer
+from backend.ngos.admin_route import admin
 
 
 def create_app():
@@ -41,5 +42,6 @@ def create_app():
     app.register_blueprint(ngos, url_prefix="/ngo")
     app.register_blueprint(students, url_prefix="/stu")
     app.register_blueprint(employer, url_prefix="/emp")
-
+    app.register_blueprint(admin, url_prefix="/admin")
+    
     return app
