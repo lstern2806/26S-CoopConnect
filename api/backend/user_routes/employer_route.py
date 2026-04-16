@@ -31,16 +31,23 @@ def get_student_detail(id):
 
 # List students who previously completed co-ops at the company. [Jackson - 6]
 @employer.route("/students/history", methods=["GET"])
-def get_coop_history(id):
+def get_coop_history():
+    company_id = request.args.get("companyId", type=int)
+    if company_id is None:
+        return jsonify({"error": "companyId query parameter is required and must be an integer"}), 400
+
     cursor = get_db().cursor(dictionary=True)
     try:
         cursor.execute(
-          """SELECT u.firstName, u.lastName, s.email, s.major, s.GPA
+          """SELECT DISTINCT u.firstName, u.lastName, u.email, s.major, s.GPA
               FROM USER u
               JOIN STUDENT s ON u.userId = s.userId
               JOIN COOPEXPERIENCE ce ON s.studentId = ce.studentId
-              WHERE companyId = %s""",(id))
+              WHERE ce.companyId = %s""",
+              (company_id,))
         return jsonify(cursor.fetchall()), 200
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
 
