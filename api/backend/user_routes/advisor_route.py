@@ -20,7 +20,7 @@ def get_students():
         previous_coop = request.args.get("previous_coop")
 
         query = """
-            SELECT s.studentId, u.firstName, u.lastName, s.major, s.experienceLevel, s.previousCoop
+            SELECT s.studentId, u.firstName, u.lastName, s.major, s.GPA, s.gradYear
             FROM STUDENT s
             JOIN USER u ON s.userId = u.userId
             WHERE 1=1
@@ -30,12 +30,6 @@ def get_students():
         if major:
             query += " AND s.major = %s"
             params.append(major)
-        if experience_level:
-            query += " AND s.experienceLevel = %s"
-            params.append(experience_level)
-        if previous_coop:
-            query += " AND s.previousCoop = %s"
-            params.append(previous_coop)
 
         cursor.execute(query, params)
         return jsonify(cursor.fetchall()), 200
@@ -50,7 +44,7 @@ def get_student(student_id):
     cursor = get_db().cursor(dictionary=True)
     try:
         query = """
-            SELECT s.studentId, u.firstName, u.lastName, s.major, s.experienceLevel, s.previousCoop
+            SELECT s.studentId, u.firstName, u.lastName, s.major, s.GPA, s.gradYear
             FROM STUDENT s
             JOIN USER u ON s.userId = u.userId
             WHERE s.studentId = %s
@@ -77,7 +71,7 @@ def filter_students():
         previous_coop = request.args.get("previous_coop")
 
         query = """
-            SELECT s.studentId, u.firstName, u.lastName, s.major, s.experienceLevel, s.previousCoop
+            SELECT s.studentId, u.firstName, u.lastName, s.major, s.GPA, s.gradYear
             FROM STUDENT s
             JOIN USER u ON s.userId = u.userId
             WHERE 1=1
@@ -87,12 +81,6 @@ def filter_students():
         if major:
             query += " AND s.major = %s"
             params.append(major)
-        if experience_level:
-            query += " AND s.experienceLevel = %s"
-            params.append(experience_level)
-        if previous_coop:
-            query += " AND s.previousCoop = %s"
-            params.append(previous_coop)
 
         cursor.execute(query, params)
         return jsonify(cursor.fetchall()), 200
@@ -108,14 +96,14 @@ def create_student():
     try:
         data = request.get_json()
         query = """
-            INSERT INTO STUDENT (userId, major, experienceLevel, previousCoop)
+            INSERT INTO STUDENT (userId, major, GPA, gradYear)
             VALUES (%s, %s, %s, %s)
         """
         cursor.execute(query, (
             data["userId"],
-            data["major"],
-            data["experienceLevel"],
-            data["previousCoop"]
+            data.get("major"),
+            data.get("GPA"),
+            data.get("gradYear")
         ))
         get_db().commit()
         return jsonify({"message": "Student created successfully", "studentId": cursor.lastrowid}), 201
@@ -130,7 +118,7 @@ def update_student(student_id):
     cursor = get_db().cursor(dictionary=True)
     try:
         data = request.get_json()
-        allowed_fields = ["major", "experienceLevel", "previousCoop"]
+        allowed_fields = ["major", "GPA", "gradYear"]
         update_fields = [f"{field} = %s" for field in allowed_fields if field in data]
         params = [data[field] for field in allowed_fields if field in data]
 

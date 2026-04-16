@@ -476,3 +476,16 @@ INSERT INTO AUDITLOG (logId, adminId, actionType, actionDetails, affectedRecord,
 (28, 2, 'DELETE', 'Removed duplicate company record for JP Morgan',      'COMPANY',       '2026-03-24 10:00:00'),
 (29, 1, 'UPDATE', 'Updated student major for studentId 12',              'STUDENT',       '2026-03-26 11:00:00'),
 (30, 2, 'INSERT', 'Onboarded new employer from Bain and Company',        'EMPLOYER',      '2026-03-28 14:00:00');
+
+-- ============================================================
+-- ADVISORREPORT (8 rows)
+-- ============================================================
+INSERT INTO ADVISORREPORT (reportId, advisorId, reportName, createdAt) VALUES
+(1, 1, 'Spring 2026 Placement Summary',          '2026-01-15 09:00:00'),
+(2, 1, 'Q1 2026 Student Outreach Overview',      '2026-02-01 10:00:00'),
+(3, 2, 'Khoury Co-op Placement Report 2026',     '2026-01-20 11:00:00'),
+(4, 2, 'Industry Trends – Tech Sector 2025',     '2026-02-10 14:00:00'),
+(5, 3, 'Engineering Student Coop Analysis',      '2026-01-25 08:30:00'),
+(6, 3, 'Spring 2026 Employer Engagement Report', '2026-03-05 09:00:00'),
+(7, 4, 'Social Sciences Placement Metrics',      '2026-02-20 10:00:00'),
+(8, 5, 'Business School Coop Statistics 2026',   '2026-03-12 11:00:00');

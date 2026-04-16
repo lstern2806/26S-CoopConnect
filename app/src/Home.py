@@ -47,6 +47,7 @@ if st.button("Act as Maya, a Student",
     st.session_state['authenticated'] = True
     # we set the role of the current user
     st.session_state['role'] = 'student'
+    st.session_state['student_id'] = 1
     # we add the first name of the user (so it can be displayed on
     # subsequent pages).
     st.session_state['first_name'] = 'Maya'
@@ -60,6 +61,7 @@ if st.button('Act as Karen, an Advisor',
              use_container_width=True):
     st.session_state['authenticated'] = True
     st.session_state['role'] = 'advisor'
+    st.session_state['advisor_id'] = 1
     st.session_state['first_name'] = 'Karen'
     st.switch_page('pages/50_Advisor_Home.py')
 
@@ -68,6 +70,8 @@ if st.button('Act as Jackson, an Employer',
              use_container_width=True):
     st.session_state['authenticated'] = True
     st.session_state['role'] = 'employer'
+    st.session_state['employer_id'] = 1
+    st.session_state['company_id'] = 1
     st.session_state['first_name'] = 'Jackson'
     st.switch_page('pages/60_Employer_Home.py')
 
@@ -76,5 +80,6 @@ if st.button('Act as System Administrator',
              use_container_width=True):
     st.session_state['authenticated'] = True
     st.session_state['role'] = 'administrator'
+    st.session_state['admin_id'] = 1
     st.session_state['first_name'] = 'SysAdmin'
     st.switch_page('pages/70_Admin_Home.py')
