@@ -15,66 +15,88 @@ def about_page_nav():
     st.sidebar.page_link("pages/30_About.py", label="About", icon="🧠")
 
 
-# ---- Role: pol_strat_advisor ------------------------------------------------
+# ---- Role: student ----------------------------------------------------------
 
-def pol_strat_home_nav():
-    st.sidebar.page_link(
-        "pages/00_Pol_Strat_Home.py", label="Political Strategist Home", icon="👤"
-    )
+def student_home_nav():
+    st.sidebar.page_link("pages/40_Student_Home.py", label="Student Home", icon="🎓")
 
 
-def world_bank_viz_nav():
-    st.sidebar.page_link(
-        "pages/01_World_Bank_Viz.py", label="World Bank Visualization", icon="🏦"
-    )
+def student_profile_nav():
+    st.sidebar.page_link("pages/41_Student_Profile.py", label="My Profile", icon="👤")
 
 
-def map_demo_nav():
-    st.sidebar.page_link("pages/02_Map_Demo.py", label="Map Demonstration", icon="🗺️")
+def student_experiences_nav():
+    st.sidebar.page_link("pages/42_Coop_Experiences.py", label="Co-op Experiences", icon="💼")
 
 
-# ---- Role: usaid_worker -----------------------------------------------------
-
-def usaid_worker_home_nav():
-    st.sidebar.page_link(
-        "pages/10_USAID_Worker_Home.py", label="USAID Worker Home", icon="🏠"
-    )
+def student_outreach_nav():
+    st.sidebar.page_link("pages/43_Student_Outreach.py", label="Student Outreach", icon="💬")
 
 
-def ngo_directory_nav():
-    st.sidebar.page_link("pages/14_NGO_Directory.py", label="NGO Directory", icon="📁")
+def employer_messages_nav():
+    st.sidebar.page_link("pages/44_Employer_Messages.py", label="Employer Messages", icon="📩")
 
 
-def add_ngo_nav():
-    st.sidebar.page_link("pages/15_Add_NGO.py", label="Add New NGO", icon="➕")
+# ---- Role: advisor ----------------------------------------------------------
+
+def advisor_home_nav():
+    st.sidebar.page_link("pages/50_Advisor_Home.py", label="Advisor Home", icon="🧭")
 
 
-def prediction_nav():
-    st.sidebar.page_link(
-        "pages/11_Prediction.py", label="Regression Prediction", icon="📈"
-    )
+def advisor_students_nav():
+    st.sidebar.page_link("pages/51_Advisor_Students.py", label="Students", icon="👥")
 
 
-def api_test_nav():
-    st.sidebar.page_link("pages/12_API_Test.py", label="Test the API", icon="🛜")
+def advisor_placements_nav():
+    st.sidebar.page_link("pages/53_Advisor_Placements.py", label="Placements", icon="📊")
 
 
-def classification_nav():
-    st.sidebar.page_link(
-        "pages/13_Classification.py", label="Classification Demo", icon="🌺"
-    )
+def advisor_networking_nav():
+    st.sidebar.page_link("pages/54_Advisor_Networking.py", label="Networking", icon="🔗")
+
+
+def advisor_reports_nav():
+    st.sidebar.page_link("pages/55_Advisor_Reports.py", label="Reports", icon="📄")
+
+
+# ---- Role: employer ---------------------------------------------------------
+
+def employer_home_nav():
+    st.sidebar.page_link("pages/60_Employer_Home.py", label="Employer Home", icon="🏢")
+
+
+def employer_search_nav():
+    st.sidebar.page_link("pages/61_Student_Search.py", label="Search Students", icon="🔎")
+
+
+def employer_history_nav():
+    st.sidebar.page_link("pages/63_Coop_History.py", label="Co-op History", icon="📚")
 
 
 # ---- Role: administrator ----------------------------------------------------
 
 def admin_home_nav():
-    st.sidebar.page_link("pages/20_Admin_Home.py", label="System Admin", icon="🖥️")
+    st.sidebar.page_link("pages/70_Admin_Home.py", label="Admin Dashboard", icon="🖥️")
 
 
-def ml_model_mgmt_nav():
-    st.sidebar.page_link(
-        "pages/21_ML_Model_Mgmt.py", label="ML Model Management", icon="🏢"
-    )
+def admin_users_nav():
+    st.sidebar.page_link("pages/71_User_Management.py", label="User Management", icon="👤")
+
+
+def admin_access_nav():
+    st.sidebar.page_link("pages/73_Role_Access.py", label="Role Access", icon="🔐")
+
+
+def admin_settings_nav():
+    st.sidebar.page_link("pages/74_System_Settings.py", label="System Settings", icon="⚙️")
+
+
+def admin_audit_nav():
+    st.sidebar.page_link("pages/75_Audit_Logs.py", label="Audit Logs", icon="🧾")
+
+
+def admin_integrity_nav():
+    st.sidebar.page_link("pages/76_Integrity_Check.py", label="Integrity Check", icon="✅")
 
 
 # ---- Sidebar assembly -------------------------------------------------------
@@ -98,22 +120,32 @@ def SideBarLinks(show_home=False):
 
     if st.session_state["authenticated"]:
 
-        if st.session_state["role"] == "pol_strat_advisor":
-            pol_strat_home_nav()
-            world_bank_viz_nav()
-            map_demo_nav()
+        if st.session_state["role"] == "student":
+            student_home_nav()
+            student_profile_nav()
+            student_experiences_nav()
+            student_outreach_nav()
+            employer_messages_nav()
 
-        if st.session_state["role"] == "usaid_worker":
-            usaid_worker_home_nav()
-            ngo_directory_nav()
-            add_ngo_nav()
-            prediction_nav()
-            api_test_nav()
-            classification_nav()
+        if st.session_state["role"] == "advisor":
+            advisor_home_nav()
+            advisor_students_nav()
+            advisor_placements_nav()
+            advisor_networking_nav()
+            advisor_reports_nav()
+
+        if st.session_state["role"] == "employer":
+            employer_home_nav()
+            employer_search_nav()
+            employer_history_nav()
 
         if st.session_state["role"] == "administrator":
             admin_home_nav()
-            ml_model_mgmt_nav()
+            admin_users_nav()
+            admin_access_nav()
+            admin_settings_nav()
+            admin_audit_nav()
+            admin_integrity_nav()
 
     # About link appears at the bottom for all roles
     about_page_nav()
