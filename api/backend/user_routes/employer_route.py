@@ -11,7 +11,11 @@ def get_high_potential_students():
     cursor = get_db().cursor(dictionary=True)
     try:
         gpa_cutoff = request.args.get("gpa", 3.5)
-        query = "SELECT * FROM STUDENT WHERE gpa >= %s"
+        query = """
+        SELECT u.firstName, u.lastName, s.GPA, s.major, s.gradYear
+        FROM STUDENT s
+        JOIN USER u ON s.userId = u.userId
+        WHERE gpa >= %s"""
         cursor.execute(query, (gpa_cutoff,))
         return jsonify(cursor.fetchall()), 200
     finally:
@@ -22,7 +26,11 @@ def get_high_potential_students():
 def get_student_detail(id):
     cursor = get_db().cursor(dictionary=True)
     try:
-        cursor.execute("SELECT * FROM STUDENT WHERE studentId = %s", (id,))
+        cursor.execute("""
+            SELECT * 
+            FROM STUDENT s
+            JOIN USER u ON s.userId = u.userId
+            WHERE studentId = %s""", (id,))
         student = cursor.fetchone()
         return jsonify(student) if student else (jsonify({"error": "Student not found"}), 404)
     finally:
