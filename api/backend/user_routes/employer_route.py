@@ -126,4 +126,48 @@ def delete_message(empMessageId):
     finally:
         cursor.close()
 
-    
+# Retrieve data of student interest in for the company [Jackson - 2]
+# TO DO
+
+
+# Retrieve engagement metrics compared to peer company averages. [Jackson-5]
+# TO DO
+
+
+# List all anonymized experience-reports
+@employer.route("/experience_reports", methods=["GET"])
+def get_experience_reports():
+    cursor = get_db().cursor(dictionary=True)
+    try:
+        cursor.execute(
+          """SELECT DISTINCT c.companyName, cr.title, ce.notes 
+              FROM COMPANY c
+              JOIN COOPROLE cr ON c.companyId = cr.companyId
+              JOIN COOPEXPERIENCE ce ON ce.companyId = c.companyId""")
+        return jsonify(cursor.fetchall()), 200
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
+
+# List all roles for this company
+@employer.route("/roles", methods=["GET"])
+def get_roles():
+    company_id = request.args.get("companyId", type=int)
+    if company_id is None:
+        return jsonify({"error": "companyId query parameter is required and must be an integer"}), 400
+
+    cursor = get_db().cursor(dictionary=True)
+    try:
+        cursor.execute(
+          """SELECT DISTINCT cr.title
+              FROM COMPANY c
+              JOIN COOPROLE cr ON c.companyId = cr.companyId
+              WHERE cr.companyId = %s""",
+              (company_id,))
+        return jsonify(cursor.fetchall()), 200
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
