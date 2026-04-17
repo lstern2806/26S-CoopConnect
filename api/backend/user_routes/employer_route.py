@@ -59,4 +59,71 @@ def get_coop_history():
     finally:
         cursor.close()
 
-#TEST checking that I get added on contributers
+
+# Return all outreach threads and send new outreach messages to students[Jackson - 1]
+@employer.route("/employer_outreach/history", methods=["GET"])
+def get_outreach_threads():
+    employerId = request.args.get("employerId", type=int)
+    if employerId is None:
+        return jsonify({"error": "employerId query parameter is required and must be an integer"}), 400
+
+    cursor = get_db().cursor(dictionary=True)
+    try:
+        cursor.execute(
+          """SELECT *
+              FROM EMPLOYEROUTREACH
+              WHERE employerId = %s""",
+              (employerId,))
+        return jsonify(cursor.fetchall()), 200
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
+
+#Create a new employer outreach message [Jackson - 1]
+@employer.route("/employer_outreach/send", methods=["POST"])
+def post_new_outreach():
+    cursor = get_db().cursor(dictionary=True)
+    try:
+        data = request.get_json()
+
+        required_fields = ["employerId", "studentId", "content"]
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+
+        query = """
+            INSERT INTO EMPLOYEROUTREACH (employerId, studentId, content)
+            VALUES (%s, %s, %s)
+        """
+        cursor.execute(query, (
+            data["employerId"],
+            data["studentId"],
+            data["content"]
+        ))
+
+        get_db().commit()
+        return jsonify({"message": "Outreach message created successfully", "empMessageId": cursor.lastrowid}), 201
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
+# Delete old, irrelevant employer outreach messages
+@employer.route("/employer_outreach/history", methods=["DELETE"])
+def delete_message(empMessageId):
+    cursor = get_db().cursor()
+    try:
+        query = "DELETE FROM EMPLOYEROUTREACH WHERE empMessageId = %s"
+        cursor.execute(query, (empMessageId,))
+        get_db().commit()
+        if cursor.rowcount == 0:
+            return jsonify({"message": "Message not found"}), 404
+        return jsonify({"message": "Message deleted successfully"}), 200
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
+    
