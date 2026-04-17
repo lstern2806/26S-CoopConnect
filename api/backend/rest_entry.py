@@ -2,24 +2,17 @@ from flask import Flask
 from dotenv import load_dotenv
 import os
 import logging
-
 from backend.db_connection import init_app as init_db
 from backend.simple.simple_routes import simple_routes
 from backend.user_routes.ngo_routes import ngos
 from backend.user_routes.student_routes import students
 from backend.user_routes.employer_route import employer
 from backend.user_routes.admin_route import admin
-from backend.user_routes.advisor_route import (
-    advisor_students,
-    advisor_networking,
-    advisor_placements,
-    advisor_dashboards,
-)
+from backend.user_routes.advisor_route import advisor
 
 
 def create_app():
     app = Flask(__name__)
-
     app.logger.setLevel(logging.DEBUG)
     app.logger.info('API startup')
 
@@ -49,9 +42,6 @@ def create_app():
     app.register_blueprint(students, url_prefix="/stu")
     app.register_blueprint(employer, url_prefix="/emp")
     app.register_blueprint(admin, url_prefix="/admin")
-    app.register_blueprint(advisor_students, url_prefix="/adv")
-    app.register_blueprint(advisor_networking, url_prefix="/adv")
-    app.register_blueprint(advisor_placements, url_prefix="/adv")
-    app.register_blueprint(advisor_dashboards, url_prefix="/adv")
-    
+    app.register_blueprint(advisor, url_prefix="/adv")
+
     return app
