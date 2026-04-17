@@ -126,12 +126,81 @@ def delete_message(empMessageId):
     finally:
         cursor.close()
 
-# Retrieve data of student interest in for the company [Jackson - 2]
-# TO DO
+@employer.route("/analytics/interest_over_time", methods=["GET"])
+def get_interest_over_time():
+    company_id = request.args.get("companyId", type=int)
+    if company_id is None:
+        return jsonify({"error": "companyId query parameter is required and must be an integer"}), 400
+
+    cursor = get_db().cursor(dictionary=True)
+    try:
+        cursor.execute(
+          """SELECT 
+                DATE(dateSent) AS day,
+                COUNT(*) AS messageCount
+            FROM STUDENTOUTREACH
+            WHERE companyId = %s
+            GROUP BY DATE(dateSent)
+            ORDER BY day;""",
+              (company_id,))
+        return jsonify(cursor.fetchall()), 200
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
 
 
 # Retrieve engagement metrics compared to peer company averages. [Jackson-5]
-# TO DO
+# right now are mock-data is not sufficient so the average for the other companies will be 0.
+@employer.route("/analytics/company_comparison", methods=["GET"])
+def get_peer_comparison():
+    company_id = request.args.get("companyId", type=int)
+    if company_id is None:
+        return jsonify({"error": "companyId query parameter is required"}), 400
+
+    cursor = get_db().cursor(dictionary=True)
+    try:
+        query = """
+        SELECT 
+            c.day,
+            c.messageCount,
+            COALESCE(o.avgMessageOtherCompanies, 0) AS avgMessageOtherCompanies
+        FROM (
+            SELECT 
+                DATE(dateSent) AS day,
+                COUNT(*) AS messageCount
+            FROM STUDENTOUTREACH
+            WHERE companyId = %s
+            GROUP BY DATE(dateSent)
+        ) c
+        LEFT JOIN (
+            SELECT 
+                day,
+                AVG(daily_count) AS avgMessageOtherCompanies
+            FROM (
+                SELECT 
+                    companyId,
+                    DATE(dateSent) AS day,
+                    COUNT(*) AS daily_count
+                FROM STUDENTOUTREACH
+                WHERE companyId != %s
+                GROUP BY companyId, DATE(dateSent)
+            ) sub
+            GROUP BY day
+        ) o
+        ON c.day = o.day
+        ORDER BY c.day;
+        """
+
+        cursor.execute(query, (company_id, company_id))
+        return jsonify(cursor.fetchall()), 200
+
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+
+    finally:
+        cursor.close()
+
 
 
 # List all anonymized experience-reports
@@ -171,3 +240,40 @@ def get_roles():
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
+
+
+
+#Create a new employer outreach message [Jackson - 1]
+@employer.route("/roles/create", methods=["POST"])
+def post_new_role():
+    cursor = get_db().cursor(dictionary=True)
+    try:
+        data = request.get_json()
+
+        required_fields = ["companyId", "title", "department", "salary", "duration"]
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+
+        query = """
+            INSERT INTO EMPLOYEROUTREACH (companyId, title, department, salary, duration)
+            VALUES (%s, %s, %s, %s, %s)
+        """
+        cursor.execute(query, (
+            data["companyId"],
+            data["title"],
+            data["department"],
+            data["salary"],
+            data["duration"]
+        ))
+
+        get_db().commit()
+        return jsonify({"message": "Role created successfully", "roleId": cursor.lastrowid}), 201
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
+
+
+
