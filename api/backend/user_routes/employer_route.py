@@ -59,3 +59,4 @@ def get_coop_history():
     finally:
         cursor.close()
 
+#TEST checking that I get added on contributers
