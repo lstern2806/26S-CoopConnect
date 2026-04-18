@@ -61,10 +61,9 @@ def get_coop_history():
 
 
 # Return all outreach threads and send new outreach messages to students[Jackson - 1]
-@employer.route("/employer_outreach/history", methods=["GET"])
-def get_outreach_threads():
-    employerId = request.args.get("employerId", type=int)
-    if employerId is None:
+@employer.route("/<int:employer_id>/outreach/history", methods=["GET"])
+def get_outreach_threads(employer_id):
+    if employer_id is None:
         return jsonify({"error": "employerId query parameter is required and must be an integer"}), 400
 
     cursor = get_db().cursor(dictionary=True)
@@ -73,7 +72,7 @@ def get_outreach_threads():
           """SELECT *
               FROM EMPLOYEROUTREACH
               WHERE employerId = %s""",
-              (employerId,))
+              (employer_id,))
         return jsonify(cursor.fetchall()), 200
     except Error as e:
         return jsonify({"error": str(e)}), 500
@@ -82,23 +81,23 @@ def get_outreach_threads():
 
 
 #Create a new employer outreach message [Jackson - 1]
-@employer.route("/employer_outreach/send", methods=["POST"])
-def post_new_outreach():
+@employer.route("/<int:employer_id>/outreach", methods=["POST"])
+def post_new_outreach(employer_id):
     cursor = get_db().cursor(dictionary=True)
     try:
         data = request.get_json()
 
-        required_fields = ["employerId", "studentId", "content"]
+        required_fields = [ "studentId", "content"]
         for field in required_fields:
             if field not in data:
                 return jsonify({"error": f"Missing required field: {field}"}), 400
 
         query = """
-            INSERT INTO EMPLOYEROUTREACH (employerId, studentId, content)
-            VALUES (%s, %s, %s)
+            INSERT INTO EMPLOYEROUTREACH (employerId, studentId, content, dateSent, response, responseDate)
+            VALUES (%s, %s, %s, NOW(), NULL, NULL)
         """
         cursor.execute(query, (
-            data["employerId"],
+            employer_id,
             data["studentId"],
             data["content"]
         ))
