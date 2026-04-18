@@ -78,6 +78,12 @@ def employer_outreach_nav():
 def employer_experience_reports_nav():
     st.sidebar.page_link("pages/64_Employer_Reports.py", label="Experience Reports", icon="🗒️")
 
+def employer_stats_nav():
+    st.sidebar.page_link("pages/65_Employer_Stats.py", label="Company Engagement", icon="📊")
+
+def employer_role_admin_nav():
+    st.sidebar.page_link("pages/66_Employer_Role_Admin.py", label="Role Admin", icon="👤")
+
 
 # ---- Role: administrator ----------------------------------------------------
 
@@ -146,6 +152,8 @@ def SideBarLinks(show_home=False):
             employer_history_nav()
             employer_outreach_nav()
             employer_experience_reports_nav()
+            employer_stats_nav()
+            employer_role_admin_nav()
 
         if st.session_state["role"] == "administrator":
             admin_home_nav()

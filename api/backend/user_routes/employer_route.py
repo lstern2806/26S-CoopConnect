@@ -255,7 +255,7 @@ def post_new_role():
                 return jsonify({"error": f"Missing required field: {field}"}), 400
 
         query = """
-            INSERT INTO EMPLOYEROUTREACH (companyId, title, department, salary, duration)
+            INSERT INTO COOPROLE (companyId, title, department, salary, duration)
             VALUES (%s, %s, %s, %s, %s)
         """
         cursor.execute(query, (
