@@ -236,7 +236,7 @@ INSERT INTO COOPEXPERIENCE (experienceId, studentId, companyId, roleId, semester
 -- STUDENTOUTREACH (60 rows)
 -- ============================================================
 INSERT INTO STUDENTOUTREACH (messageId, senderId, recipientId, companyId, content, dateSent, responseStatus) VALUES
-(1, 1, 2, 1, 'Hi Leah, I saw you did a co-op at Goldman. Would love to connect!',                           '2026-01-10 10:00:00', 'replied'),
+(1, 1, 2, 1, 'Hi Leah, I saw you did a co-op at Goldman. Would love to connect!',                           '2026-01-11 10:00:00', 'replied'),
 (2, 2, 1, 1, 'Hi Maya, happy to chat about my Goldman experience anytime.',                                 '2026-01-11 14:00:00', 'awaiting reply'),
 (3, 1, 3, 2, 'Hey Ethan, I heard you worked at Fidelity. How was the culture there?',                       '2026-01-12 09:30:00', 'replied'),
 (4, 3, 1, 2, 'It was great! The team was super collaborative. Happy to share more.',                        '2026-01-13 11:00:00', 'awaiting reply'),
