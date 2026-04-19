@@ -81,18 +81,20 @@ try:
         
         if comp_data:
             df_comp = pd.DataFrame(comp_data)
+
             df_comp['day'] = pd.to_datetime(df_comp['day'])
-            
-            # Renaming columns for a cleaner legend in the UI
+
+            # 🔑 FORCE numeric (this fixes the weird axis)
+            df_comp["messageCount"] = pd.to_numeric(df_comp["messageCount"])
+            df_comp["avgMessageOtherCompanies"] = pd.to_numeric(df_comp["avgMessageOtherCompanies"])
+
             df_comp = df_comp.rename(columns={
                 "messageCount": "Your Company",
                 "avgMessageOtherCompanies": "Companies Average"
             })
-            
-            # Setting the index to 'day' allows Streamlit to use it as the X-axis automatically
+
             df_comp.set_index("day", inplace=True)
-            
-            # Plotting both columns on one chart
+
             st.line_chart(df_comp)
         else:
             st.info("Not enough data to generate a peer comparison yet.")
