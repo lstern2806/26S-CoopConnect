@@ -3,8 +3,6 @@ from dotenv import load_dotenv
 import os
 import logging
 from backend.db_connection import init_app as init_db
-from backend.simple.simple_routes import simple_routes
-from backend.user_routes.ngo_routes import ngos
 from backend.user_routes.student_routes import students
 from backend.user_routes.employer_route import employer
 from backend.user_routes.admin_route import admin
@@ -37,8 +35,6 @@ def create_app():
     # Register the routes from each Blueprint with the app object
     # and give a url prefix to each.
     app.logger.info("create_app(): registering blueprints")
-    app.register_blueprint(simple_routes)
-    app.register_blueprint(ngos, url_prefix="/ngo")
     app.register_blueprint(students, url_prefix="/stu")
     app.register_blueprint(employer, url_prefix="/emp")
     app.register_blueprint(admin, url_prefix="/admin")
