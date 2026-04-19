@@ -236,7 +236,7 @@ INSERT INTO COOPEXPERIENCE (experienceId, studentId, companyId, roleId, semester
 -- STUDENTOUTREACH (60 rows)
 -- ============================================================
 INSERT INTO STUDENTOUTREACH (messageId, senderId, recipientId, companyId, content, dateSent, responseStatus) VALUES
-(1, 1, 2, 1, 'Hi Leah, I saw you did a co-op at Goldman. Would love to connect!',                           '2026-01-11 10:00:00', 'replied'),
+(1, 1, 2, 1, 'Hi Leah, I saw you did a co-op at Goldman. Would love to connect!',                           '2026-01-10 10:00:00', 'replied'),
 (2, 2, 1, 1, 'Hi Maya, happy to chat about my Goldman experience anytime.',                                 '2026-01-11 14:00:00', 'awaiting reply'),
 (3, 1, 3, 2, 'Hey Ethan, I heard you worked at Fidelity. How was the culture there?',                       '2026-01-12 09:30:00', 'replied'),
 (4, 3, 1, 2, 'It was great! The team was super collaborative. Happy to share more.',                        '2026-01-13 11:00:00', 'awaiting reply'),
@@ -246,7 +246,7 @@ INSERT INTO STUDENTOUTREACH (messageId, senderId, recipientId, companyId, conten
 (8, 8, 4, 4, 'There were 4 rounds — two coding, one system design, one behavioral.',                        '2026-01-17 09:00:00', 'awaiting reply'),
 (9, 5, 7, 5, 'Hey James, how did you find the Raytheon co-op?',                                             '2026-01-18 14:30:00', 'replied'),
 (10, 7, 5, 5, 'Yes very defense oriented. Great if you like embedded systems work.',                        '2026-01-19 11:30:00', 'awaiting reply'),
-(11, 1, 8, 1, 'Olivia, any advice for Google SWE roles?',                                                   '2026-01-20 10:00:00', 'replied'),
+(11, 1, 8, 1, 'Olivia, any advice for Google SWE roles?',                                                   '2026-01-21 10:00:00', 'replied'),
 (12, 8, 1, 1, 'Practice LeetCode and system design.',                                                       '2026-01-21 12:00:00', 'awaiting reply'),
 (13, 9, 10, 2, 'Hi Marcus, how was BlackRock risk team?',                                                   '2026-01-22 09:00:00', 'replied'),
 (14, 10, 9, 2, 'Really challenging but rewarding.',                                                         '2026-01-23 14:00:00', 'awaiting reply'),
@@ -294,8 +294,8 @@ INSERT INTO STUDENTOUTREACH (messageId, senderId, recipientId, companyId, conten
 (56, 4,  2, 3,  'Very different. Consulting is more project-based and client-facing.',                      '2026-03-06 10:00:00', 'awaiting reply'),
 (57, 3,  20, 4, 'Ethan here — Tyler did Microsoft give you real ownership of your projects?',               '2026-03-07 14:00:00', 'replied'),
 (58, 20, 3, 3, 'Yes absolutely. I shipped two features that went to production.',                           '2026-03-08 09:00:00', 'awaiting reply'),
-(59, 16, 8, 5,  'Hannah — Olivia did Google sponsor your housing during the co-op?',                        '2026-03-09 13:00:00', 'replied'),
-(60, 8,  16, 6, 'They gave a housing stipend which was really helpful in the Bay Area.',                    '2026-03-10 11:00:00', 'awaiting reply');
+(59, 16, 8, 5,  'Hannah — Olivia did Google sponsor your housing during the co-op?',                       '2026-03-09 13:00:00', 'replied'),
+(60, 8,  16, 6, 'They gave a housing stipend which was really helpful in the Bay Area.',                   '2026-03-10 11:00:00', 'awaiting reply');
  
 -- ============================================================
 -- EMPLOYEROUTREACH (60 rows)
