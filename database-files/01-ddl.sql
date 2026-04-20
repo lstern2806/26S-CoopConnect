@@ -139,6 +139,7 @@ CREATE TABLE STUDENTOUTREACH (
     messageId       INT             NOT NULL AUTO_INCREMENT,
     senderId        INT             NOT NULL,
     recipientId     INT             NOT NULL,
+    companyId       INT             NOT NULL,
     content         TEXT,
     dateSent        DATETIME,
     responseStatus  VARCHAR(50)     DEFAULT 'pending',
@@ -147,6 +148,9 @@ CREATE TABLE STUDENTOUTREACH (
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
     FOREIGN KEY (recipientId) REFERENCES STUDENT (studentId)
+        ON UPDATE CASCADE
+        ON DELETE RESTRICT,
+    FOREIGN KEY (companyId) REFERENCES COMPANY (companyId)
         ON UPDATE CASCADE
         ON DELETE RESTRICT
 );

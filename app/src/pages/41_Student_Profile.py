@@ -23,7 +23,12 @@ try:
     response = requests.get(f"{API}/stu/students/{student_id}", timeout=10)
     if response.status_code == 200:
         profile = response.json()
-        st.write(profile)
+        st.subheader(f"{profile.get('firstName')} {profile.get('lastName')}")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Major", profile.get("major"))
+        col2.metric("GPA", profile.get("GPA"))
+        col3.metric("Graduation Year", profile.get("gradYear"))
+        st.write(f"📧 {profile.get('email')}")
 
         with st.form("update_profile"):
             major = st.text_input("Major", value=profile.get("major") or "")

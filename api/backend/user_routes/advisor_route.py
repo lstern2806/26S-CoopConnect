@@ -2,16 +2,17 @@ from flask import Blueprint, jsonify, request, current_app
 from backend.db_connection import get_db
 from mysql.connector import Error
 
-advisor_students = Blueprint("advisor_students", __name__)
-advisor_networking = Blueprint("advisor_networking", __name__)
-advisor_placements = Blueprint("advisor_placements", __name__)
-advisor_dashboards = Blueprint("advisor_dashboards", __name__)
+advisor = Blueprint("advisor", __name__)
+
 
 # =====================================================
-# ADVISOR STUDENTS BLUEPRINT
+# STUDENTS
 # =====================================================
 
-@advisor_students.route("/students", methods=["GET"])
+# Return a list of students and profile attributes such as major, experience
+# level, and previous co-op for filtering and advising
+# [FinanceAdvisor-5], [Maya-2]
+@advisor.route("/students", methods=["GET"])
 def get_students():
     cursor = get_db().cursor(dictionary=True)
     try:
@@ -26,10 +27,15 @@ def get_students():
             WHERE 1=1
         """
         params = []
-
         if major:
             query += " AND s.major = %s"
             params.append(major)
+        if experience_level:
+            query += " AND s.experienceLevel = %s"
+            params.append(experience_level)
+        if previous_coop is not None:
+            query += " AND s.previousCoop = %s"
+            params.append(previous_coop)
 
         cursor.execute(query, params)
         return jsonify(cursor.fetchall()), 200
@@ -39,7 +45,10 @@ def get_students():
         cursor.close()
 
 
-@advisor_students.route("/students/<int:student_id>", methods=["GET"])
+# Return detailed information for one student, including networking activity
+# and outcomes
+# [FinanceAdvisor-1], [FinanceAdvisor-3], [Maya-2], [Jackson-1]
+@advisor.route("/students/<int:student_id>", methods=["GET"])
 def get_student(student_id):
     cursor = get_db().cursor(dictionary=True)
     try:
@@ -51,10 +60,8 @@ def get_student(student_id):
         """
         cursor.execute(query, (student_id,))
         student = cursor.fetchone()
-
         if not student:
             return jsonify({"error": "Student not found"}), 404
-
         return jsonify(student), 200
     except Error as e:
         return jsonify({"error": str(e)}), 500
@@ -62,58 +69,8 @@ def get_student(student_id):
         cursor.close()
 
 
-@advisor_students.route("/students/filter", methods=["GET"])
-def filter_students():
-    cursor = get_db().cursor(dictionary=True)
-    try:
-        major = request.args.get("major")
-        experience_level = request.args.get("experience_level")
-        previous_coop = request.args.get("previous_coop")
-
-        query = """
-            SELECT s.studentId, u.firstName, u.lastName, s.major, s.GPA, s.gradYear
-            FROM STUDENT s
-            JOIN USER u ON s.userId = u.userId
-            WHERE 1=1
-        """
-        params = []
-
-        if major:
-            query += " AND s.major = %s"
-            params.append(major)
-
-        cursor.execute(query, params)
-        return jsonify(cursor.fetchall()), 200
-    except Error as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cursor.close()
-
-
-@advisor_students.route("/students", methods=["POST"])
-def create_student():
-    cursor = get_db().cursor(dictionary=True)
-    try:
-        data = request.get_json()
-        query = """
-            INSERT INTO STUDENT (userId, major, GPA, gradYear)
-            VALUES (%s, %s, %s, %s)
-        """
-        cursor.execute(query, (
-            data["userId"],
-            data.get("major"),
-            data.get("GPA"),
-            data.get("gradYear")
-        ))
-        get_db().commit()
-        return jsonify({"message": "Student created successfully", "studentId": cursor.lastrowid}), 201
-    except Error as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cursor.close()
-
-
-@advisor_students.route("/students/<int:student_id>", methods=["PUT"])
+# Update student profile [Maya-4]
+@advisor.route("/students/<int:student_id>", methods=["PUT"])
 def update_student(student_id):
     cursor = get_db().cursor(dictionary=True)
     try:
@@ -121,15 +78,12 @@ def update_student(student_id):
         allowed_fields = ["major", "GPA", "gradYear"]
         update_fields = [f"{field} = %s" for field in allowed_fields if field in data]
         params = [data[field] for field in allowed_fields if field in data]
-
         if not update_fields:
             return jsonify({"error": "No valid fields to update"}), 400
-
         params.append(student_id)
         query = f"UPDATE STUDENT SET {', '.join(update_fields)} WHERE studentId = %s"
         cursor.execute(query, params)
         get_db().commit()
-
         return jsonify({"message": "Student updated successfully"}), 200
     except Error as e:
         return jsonify({"error": str(e)}), 500
@@ -138,63 +92,20 @@ def update_student(student_id):
 
 
 # =====================================================
-# ADVISOR NETWORKING BLUEPRINT
+# NETWORKING ACTIVITY
 # =====================================================
 
-@advisor_networking.route("/networking/activity", methods=["GET"])
+# Return aggregated networking activity across students, including outreach,
+# responses, and engagement metrics
+# [FinanceAdvisor-1], [FinanceAdvisor-3], [FinanceAdvisor-4]
+@advisor.route("/networking-activity", methods=["GET"])
 def get_networking_activity():
     cursor = get_db().cursor(dictionary=True)
     try:
         query = """
             SELECT s.studentId, u.firstName, u.lastName,
                    COUNT(DISTINCT so.messageId) AS totalStudentOutreach,
-                   COUNT(DISTINCT eo.empMessageId) AS totalEmployerResponses
-            FROM STUDENT s
-            JOIN USER u ON s.userId = u.userId
-            LEFT JOIN STUDENTOUTREACH so ON s.studentId = so.senderId
-            LEFT JOIN EMPLOYEROUTREACH eo ON s.studentId = eo.studentId
-            GROUP BY s.studentId, u.firstName, u.lastName
-        """
-        cursor.execute(query)
-        return jsonify(cursor.fetchall()), 200
-    except Error as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cursor.close()
-
-
-@advisor_networking.route("/networking/activity/<int:student_id>", methods=["GET"])
-def get_student_networking_activity(student_id):
-    cursor = get_db().cursor(dictionary=True)
-    try:
-        query = """
-            SELECT s.studentId, u.firstName, u.lastName,
-                   COUNT(DISTINCT so.messageId) AS totalStudentOutreach,
-                   COUNT(DISTINCT eo.empMessageId) AS totalEmployerResponses
-            FROM STUDENT s
-            JOIN USER u ON s.userId = u.userId
-            LEFT JOIN STUDENTOUTREACH so ON s.studentId = so.senderId
-            LEFT JOIN EMPLOYEROUTREACH eo ON s.studentId = eo.studentId
-            WHERE s.studentId = %s
-            GROUP BY s.studentId, u.firstName, u.lastName
-        """
-        cursor.execute(query, (student_id,))
-        result = cursor.fetchone()
-        return jsonify(result), 200
-    except Error as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cursor.close()
-
-
-@advisor_networking.route("/networking/engagement", methods=["GET"])
-def get_engagement_metrics():
-    cursor = get_db().cursor(dictionary=True)
-    try:
-        query = """
-            SELECT s.studentId, u.firstName, u.lastName,
-                   COUNT(DISTINCT so.messageId) AS outreachSent,
-                   COUNT(DISTINCT eo.empMessageId) AS employerMessages,
+                   COUNT(DISTINCT eo.empMessageId) AS totalEmployerResponses,
                    CASE
                        WHEN COUNT(DISTINCT so.messageId) = 0 THEN 0
                        ELSE ROUND(COUNT(DISTINCT eo.empMessageId) / COUNT(DISTINCT so.messageId), 2)
@@ -213,35 +124,28 @@ def get_engagement_metrics():
         cursor.close()
 
 
-@advisor_networking.route("/networking/outreach", methods=["POST"])
-def create_outreach():
+# Return networking activity for a specific student to monitor engagement and
+# identify students needing support [FinanceAdvisor-3]
+@advisor.route("/networking-activity/<int:student_id>", methods=["GET"])
+def get_student_networking_activity(student_id):
     cursor = get_db().cursor(dictionary=True)
     try:
-        data = request.get_json()
         query = """
-            INSERT INTO STUDENTOUTREACH (senderId, recipientId, content)
-            VALUES (%s, %s, %s)
+            SELECT s.studentId, u.firstName, u.lastName,
+                   COUNT(DISTINCT so.messageId) AS totalStudentOutreach,
+                   COUNT(DISTINCT eo.empMessageId) AS totalEmployerResponses
+            FROM STUDENT s
+            JOIN USER u ON s.userId = u.userId
+            LEFT JOIN STUDENTOUTREACH so ON s.studentId = so.senderId
+            LEFT JOIN EMPLOYEROUTREACH eo ON s.studentId = eo.studentId
+            WHERE s.studentId = %s
+            GROUP BY s.studentId, u.firstName, u.lastName
         """
-        cursor.execute(query, (
-            data["senderId"],
-            data["recipientId"],
-            data.get("content")
-        ))
-        get_db().commit()
-        return jsonify({"message": "Outreach created successfully", "messageId": cursor.lastrowid}), 201
-    except Error as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cursor.close()
-
-
-@advisor_networking.route("/networking/outreach/<int:message_id>", methods=["DELETE"])
-def delete_outreach(message_id):
-    cursor = get_db().cursor(dictionary=True)
-    try:
-        cursor.execute("DELETE FROM STUDENTOUTREACH WHERE messageId = %s", (message_id,))
-        get_db().commit()
-        return jsonify({"message": "Outreach deleted successfully"}), 200
+        cursor.execute(query, (student_id,))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({"error": "Student not found"}), 404
+        return jsonify(result), 200
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
@@ -249,15 +153,18 @@ def delete_outreach(message_id):
 
 
 # =====================================================
-# ADVISOR PLACEMENTS BLUEPRINT
+# PLACEMENTS
 # =====================================================
 
-@advisor_placements.route("/placements", methods=["GET"])
+# Return co-op placement records by student, company, and industry
+# [FinanceAdvisor-1], [FinanceAdvisor-2], [FinanceAdvisor-6]
+@advisor.route("/placements", methods=["GET"])
 def get_placements():
     cursor = get_db().cursor(dictionary=True)
     try:
         query = """
-            SELECT ce.experienceId, ce.studentId, ce.companyId, c.companyName, c.industry
+            SELECT ce.experienceId, ce.studentId, ce.companyId,
+                   c.companyName, c.industry
             FROM COOPEXPERIENCE ce
             JOIN COMPANY c ON ce.companyId = c.companyId
         """
@@ -269,12 +176,15 @@ def get_placements():
         cursor.close()
 
 
-@advisor_placements.route("/placements/trends", methods=["GET"])
+# Return trend data on successful co-op placements by company, industry, and
+# time period [FinanceAdvisor-2], [FinanceAdvisor-6]
+@advisor.route("/placements/trends", methods=["GET"])
 def get_placement_trends():
     cursor = get_db().cursor(dictionary=True)
     try:
         query = """
-            SELECT c.companyName, c.industry, COUNT(ce.experienceId) AS totalPlacements
+            SELECT c.companyName, c.industry,
+                   COUNT(ce.experienceId) AS totalPlacements
             FROM COOPEXPERIENCE ce
             JOIN COMPANY c ON ce.companyId = c.companyId
             GROUP BY c.companyName, c.industry
@@ -288,73 +198,13 @@ def get_placement_trends():
         cursor.close()
 
 
-@advisor_placements.route("/placements/company/<int:company_id>", methods=["GET"])
-def get_company_placements(company_id):
-    cursor = get_db().cursor(dictionary=True)
-    try:
-        query = """
-            SELECT ce.experienceId, ce.studentId, c.companyName, c.industry
-            FROM COOPEXPERIENCE ce
-            JOIN COMPANY c ON ce.companyId = c.companyId
-            WHERE c.companyId = %s
-        """
-        cursor.execute(query, (company_id,))
-        return jsonify(cursor.fetchall()), 200
-    except Error as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cursor.close()
-
-
-@advisor_placements.route("/placements", methods=["POST"])
-def create_placement():
-    cursor = get_db().cursor(dictionary=True)
-    try:
-        data = request.get_json()
-        query = """
-            INSERT INTO COOPEXPERIENCE (studentId, companyId)
-            VALUES (%s, %s)
-        """
-        cursor.execute((query), (
-            data["studentId"],
-            data["companyId"]
-        ))
-        get_db().commit()
-        return jsonify({"message": "Placement created successfully", "experienceId": cursor.lastrowid}), 201
-    except Error as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cursor.close()
-
-
-@advisor_placements.route("/placements/<int:experience_id>", methods=["PUT"])
-def update_placement(experience_id):
-    cursor = get_db().cursor(dictionary=True)
-    try:
-        data = request.get_json()
-        allowed_fields = ["studentId", "companyId"]
-        update_fields = [f"{field} = %s" for field in allowed_fields if field in data]
-        params = [data[field] for field in allowed_fields if field in data]
-
-        if not update_fields:
-            return jsonify({"error": "No valid fields to update"}), 400
-
-        params.append(experience_id)
-        query = f"UPDATE COOPEXPERIENCE SET {', '.join(update_fields)} WHERE experienceId = %s"
-        cursor.execute(query, params)
-        get_db().commit()
-        return jsonify({"message": "Placement updated successfully"}), 200
-    except Error as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cursor.close()
-
-
 # =====================================================
-# ADVISOR DASHBOARDS BLUEPRINT
+# DASHBOARDS
 # =====================================================
 
-@advisor_dashboards.route("/dashboards/kpis", methods=["GET"])
+# Return dashboard KPI data such as response rates, offer conversion rates,
+# and engagement measures [FinanceAdvisor-4], [FinanceAdvisor-6]
+@advisor.route("/dashboards/kpis", methods=["GET"])
 def get_kpis():
     cursor = get_db().cursor(dictionary=True)
     try:
@@ -381,7 +231,9 @@ def get_kpis():
         cursor.close()
 
 
-@advisor_dashboards.route("/dashboards/performance", methods=["GET"])
+# Return overall program performance metrics over time for reporting and
+# improvement analysis [FinanceAdvisor-6]
+@advisor.route("/dashboards/performance", methods=["GET"])
 def get_performance():
     cursor = get_db().cursor(dictionary=True)
     try:
@@ -402,16 +254,38 @@ def get_performance():
         cursor.close()
 
 
-@advisor_dashboards.route("/dashboards/reports/<int:advisor_id>", methods=["GET"])
-def get_reports(advisor_id):
+# =====================================================
+# FILTERS
+# =====================================================
+
+# Return filtered student data based on major, experience level, or previous
+# co-op [FinanceAdvisor-5]
+@advisor.route("/filters/students", methods=["GET"])
+def get_filtered_students():
     cursor = get_db().cursor(dictionary=True)
     try:
+        major = request.args.get("major")
+        experience_level = request.args.get("experience_level")
+        previous_coop = request.args.get("previous_coop")
+
         query = """
-            SELECT reportId, advisorId, reportName, createdAt
-            FROM ADVISORREPORT
-            WHERE advisorId = %s
+            SELECT s.studentId, u.firstName, u.lastName, s.major, s.GPA, s.gradYear
+            FROM STUDENT s
+            JOIN USER u ON s.userId = u.userId
+            WHERE 1=1
         """
-        cursor.execute(query, (advisor_id,))
+        params = []
+        if major:
+            query += " AND s.major = %s"
+            params.append(major)
+        if experience_level:
+            query += " AND s.experienceLevel = %s"
+            params.append(experience_level)
+        if previous_coop is not None:
+            query += " AND s.previousCoop = %s"
+            params.append(previous_coop)
+
+        cursor.execute(query, params)
         return jsonify(cursor.fetchall()), 200
     except Error as e:
         return jsonify({"error": str(e)}), 500
@@ -419,14 +293,117 @@ def get_reports(advisor_id):
         cursor.close()
 
 
-@advisor_dashboards.route("/dashboards/reports/<int:report_id>", methods=["PUT"])
+# Submit filter criteria for advanced analytics queries [FinanceAdvisor-5]
+@advisor.route("/filters/students", methods=["POST"])
+def post_filter_students():
+    cursor = get_db().cursor(dictionary=True)
+    try:
+        data = request.get_json() or {}
+        major = data.get("major")
+        experience_level = data.get("experience_level")
+        previous_coop = data.get("previous_coop")
+        min_gpa = data.get("min_gpa")
+        grad_year = data.get("gradYear")
+
+        query = """
+            SELECT s.studentId, u.firstName, u.lastName, s.major, s.GPA, s.gradYear
+            FROM STUDENT s
+            JOIN USER u ON s.userId = u.userId
+            WHERE 1=1
+        """
+        params = []
+        if major:
+            query += " AND s.major = %s"
+            params.append(major)
+        if experience_level:
+            query += " AND s.experienceLevel = %s"
+            params.append(experience_level)
+        if previous_coop is not None:
+            query += " AND s.previousCoop = %s"
+            params.append(previous_coop)
+        if min_gpa is not None:
+            query += " AND s.GPA >= %s"
+            params.append(min_gpa)
+        if grad_year:
+            query += " AND s.gradYear = %s"
+            params.append(grad_year)
+
+        cursor.execute(query, params)
+        return jsonify(cursor.fetchall()), 200
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
+
+# =====================================================
+# ADVISOR REPORTS
+# =====================================================
+
+# Return saved advisor reports on student outcomes, networking success, and
+# program performance
+# [FinanceAdvisor-1], [FinanceAdvisor-2], [FinanceAdvisor-6]
+@advisor.route("/advisors/reports", methods=["GET"])
+def get_reports():
+    cursor = get_db().cursor(dictionary=True)
+    try:
+        advisor_id = request.args.get("advisorId", type=int)
+        query = """
+            SELECT reportId, advisorId, reportName, createdAt
+            FROM ADVISORREPORT
+        """
+        params = []
+        if advisor_id is not None:
+            query += " WHERE advisorId = %s"
+            params.append(advisor_id)
+        cursor.execute(query, params)
+        return jsonify(cursor.fetchall()), 200
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
+
+# Create a new custom report for advising or business school reporting
+# [FinanceAdvisor-6]
+@advisor.route("/advisors/reports", methods=["POST"])
+def create_report():
+    cursor = get_db().cursor(dictionary=True)
+    try:
+        data = request.get_json()
+        required_fields = ["advisorId", "reportName"]
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+        query = """
+            INSERT INTO ADVISORREPORT (advisorId, reportName, createdAt)
+            VALUES (%s, %s, NOW())
+        """
+        cursor.execute(query, (data["advisorId"], data["reportName"]))
+        get_db().commit()
+        return jsonify({
+            "message": "Report created successfully",
+            "reportId": cursor.lastrowid
+        }), 201
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
+
+# Update an existing saved report configuration [FinanceAdvisor-6]
+@advisor.route("/advisors/reports/<int:report_id>", methods=["PUT"])
 def update_report(report_id):
     cursor = get_db().cursor(dictionary=True)
     try:
         data = request.get_json()
+        if "reportName" not in data:
+            return jsonify({"error": "Missing required field: reportName"}), 400
         query = "UPDATE ADVISORREPORT SET reportName = %s WHERE reportId = %s"
         cursor.execute(query, (data["reportName"], report_id))
         get_db().commit()
+        if cursor.rowcount == 0:
+            return jsonify({"message": "Report not found"}), 404
         return jsonify({"message": "Report updated successfully"}), 200
     except Error as e:
         return jsonify({"error": str(e)}), 500
@@ -434,34 +411,16 @@ def update_report(report_id):
         cursor.close()
 
 
-@advisor_dashboards.route("/dashboards/reports/<int:report_id>", methods=["DELETE"])
+# Delete a saved report no longer needed [FinanceAdvisor-6]
+@advisor.route("/advisors/reports/<int:report_id>", methods=["DELETE"])
 def delete_report(report_id):
-    cursor = get_db().cursor(dictionary=True)
+    cursor = get_db().cursor()
     try:
         cursor.execute("DELETE FROM ADVISORREPORT WHERE reportId = %s", (report_id,))
         get_db().commit()
+        if cursor.rowcount == 0:
+            return jsonify({"message": "Report not found"}), 404
         return jsonify({"message": "Report deleted successfully"}), 200
-    except Error as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        cursor.close()
-
-
-@advisor_dashboards.route("/dashboards/reports", methods=["POST"])
-def create_report():
-    cursor = get_db().cursor(dictionary=True)
-    try:
-        data = request.get_json()
-        query = """
-            INSERT INTO ADVISORREPORT (advisorId, reportName, createdAt)
-            VALUES (%s, %s, NOW())
-        """
-        cursor.execute(query, (
-            data["advisorId"],
-            data["reportName"]
-        ))
-        get_db().commit()
-        return jsonify({"message": "Report created successfully", "reportId": cursor.lastrowid}), 201
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
