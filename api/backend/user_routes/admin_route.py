@@ -52,6 +52,7 @@ def get_all_users():
     try:
         current_app.logger.info("GET /admin/users")
         status, search = request.args.get("status"), request.args.get("q")
+        uid_filter = request.args.get("userId")
         query = """
             SELECT u.userId, u.firstName, u.lastName, u.email, u.accountStatus,
                    CONCAT_WS(', ',
@@ -68,6 +69,15 @@ def get_all_users():
             WHERE 1=1
         """
         params = []
+        if uid_filter is not None and str(uid_filter).strip() != "":
+            try:
+                uid_val = int(uid_filter)
+            except (TypeError, ValueError):
+                return jsonify({"error": "userId must be a positive integer"}), 400
+            if uid_val < 1:
+                return jsonify({"error": "userId must be a positive integer"}), 400
+            query += " AND u.userId = %s"
+            params.append(uid_val)
         if status:
             query += " AND u.accountStatus = %s"
             params.append(status)
@@ -372,6 +382,12 @@ def get_user_role_conflicts():
         cursor.execute(
             """
             SELECT u.userId, u.firstName, u.lastName, u.email,
+                   CONCAT_WS(', ',
+                       IF(a.adminId IS NOT NULL, 'ADMIN', NULL),
+                       IF(ad.advisorId IS NOT NULL, 'ADVISOR', NULL),
+                       IF(s.studentId IS NOT NULL, 'STUDENT', NULL),
+                       IF(e.employerId IS NOT NULL, 'EMPLOYER', NULL)
+                   ) AS roles,
                    (IF(a.adminId IS NOT NULL, 1, 0) + IF(ad.advisorId IS NOT NULL, 1, 0) + IF(s.studentId IS NOT NULL, 1, 0) + IF(e.employerId IS NOT NULL, 1, 0)) AS role_count
             FROM `USER` u
             LEFT JOIN ADMIN a ON u.userId = a.userId
@@ -407,6 +423,73 @@ def get_admin_kpis():
             """
         )
         return jsonify(cursor.fetchone()), 200
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
+
+@admin.route("/dashboards/audit-activity", methods=["GET"])
+def get_audit_activity():
+    """Audit log counts per calendar day for the last 30 days (for dashboard charts)."""
+    cursor = get_db().cursor(dictionary=True)
+    try:
+        current_app.logger.info("GET /admin/dashboards/audit-activity")
+        cursor.execute(
+            """
+            SELECT DATE(actionTimestamp) AS activityDate, COUNT(*) AS cnt
+            FROM AUDITLOG
+            WHERE actionTimestamp >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            GROUP BY DATE(actionTimestamp)
+            ORDER BY activityDate
+            """
+        )
+        return jsonify(cursor.fetchall()), 200
+    except Error as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+
+
+@admin.route("/dashboards/student-stats", methods=["GET"])
+def get_student_stats():
+    """GPA buckets and graduation year counts for admin dashboard charts."""
+    cursor = get_db().cursor(dictionary=True)
+    try:
+        current_app.logger.info("GET /admin/dashboards/student-stats")
+        cursor.execute(
+            """
+            SELECT bucket AS gpaBucket, COUNT(*) AS studentCount
+            FROM (
+                SELECT
+                    CASE
+                        WHEN GPA IS NULL THEN 'Unknown'
+                        WHEN GPA < 2.0 THEN '< 2.0'
+                        WHEN GPA < 2.5 THEN '2.0-2.49'
+                        WHEN GPA < 3.0 THEN '2.5-2.99'
+                        WHEN GPA < 3.5 THEN '3.0-3.49'
+                        ELSE '3.5-4.0'
+                    END AS bucket
+                FROM STUDENT
+            ) AS GPABuckets
+            GROUP BY bucket
+            ORDER BY FIELD(
+                bucket,
+                '< 2.0', '2.0-2.49', '2.5-2.99', '3.0-3.49', '3.5-4.0', 'Unknown'
+            )
+            """
+        )
+        gpa_rows = cursor.fetchall()
+        cursor.execute(
+            """
+            SELECT gradYear AS gradYear, COUNT(*) AS studentCount
+            FROM STUDENT
+            GROUP BY gradYear
+            ORDER BY gradYear
+            """
+        )
+        year_rows = cursor.fetchall()
+        return jsonify({"gpaDistribution": gpa_rows, "gradYearDistribution": year_rows}), 200
     except Error as e:
         return jsonify({"error": str(e)}), 500
     finally:
