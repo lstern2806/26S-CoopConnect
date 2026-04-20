@@ -11,11 +11,11 @@ logger = logging.getLogger(__name__)
 # import the main streamlit library as well
 # as SideBarLinks function from src/modules folder
 import streamlit as st
-from modules.nav import SideBarLinks
+from modules.nav import PAGE_ICON, SideBarLinks
 
 # streamlit supports regular and wide layout (how the controls
 # are organized/displayed on the screen).
-st.set_page_config(layout='wide')
+st.set_page_config(layout='wide', page_icon=PAGE_ICON)
 
 # If a user is at this page, we assume they are not
 # authenticated.  So we change the 'authenticated' value

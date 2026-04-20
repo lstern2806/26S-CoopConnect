@@ -4,6 +4,10 @@
 
 import streamlit as st
 
+# Shared branding (favicon + sidebar); path is relative to app/src
+LOGO_PATH = "assets/logo.png"
+PAGE_ICON = LOGO_PATH
+
 
 # ---- General ----------------------------------------------------------------
 
@@ -108,7 +112,7 @@ def SideBarLinks(show_home=False):
     """
 
     # Logo appears at the top of the sidebar on every page
-    st.sidebar.image("assets/logo.png", width=150)
+    st.sidebar.image(LOGO_PATH, width=150)
 
     # If no one is logged in, send them to the Home (login) page
     if "authenticated" not in st.session_state:

@@ -2,11 +2,11 @@ import logging
 
 import streamlit as st
 
-from modules.nav import SideBarLinks
+from modules.nav import PAGE_ICON, SideBarLinks
 
 logger = logging.getLogger(__name__)
 
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide", page_icon=PAGE_ICON)
 SideBarLinks()
 
 st.title("Employer Home")
