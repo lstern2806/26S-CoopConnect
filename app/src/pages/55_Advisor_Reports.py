@@ -2,12 +2,8 @@ import logging
 import os
 import requests
 import streamlit as st
-<<<<<<< HEAD
 
 from modules.nav import PAGE_ICON, SideBarLinks
-=======
-from modules.nav import SideBarLinks
->>>>>>> refs/remotes/origin/main
 
 logger = logging.getLogger(__name__)
 

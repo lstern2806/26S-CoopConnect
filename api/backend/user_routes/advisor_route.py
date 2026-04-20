@@ -215,8 +215,8 @@ def get_kpis():
                 COUNT(DISTINCT eo.empMessageId) AS totalResponses,
                 COUNT(DISTINCT ce.experienceId) AS totalPlacements,
                 CASE
-                    WHEN COUNT(DISTINCT so.messageId) = 0 THEN 0
-                    ELSE ROUND(COUNT(DISTINCT eo.empMessageId) / COUNT(DISTINCT so.messageId), 2)
+                    WHEN COUNT(DISTINCT so.messageId) = 0 THEN 0.0
+                    ELSE ROUND(COUNT(DISTINCT eo.empMessageId) * 1.0 / COUNT(DISTINCT so.messageId), 2)
                 END AS responseRate
             FROM STUDENT s
             LEFT JOIN STUDENTOUTREACH so ON s.studentId = so.senderId
