@@ -21,6 +21,31 @@ def api_error_banner(exc: requests.exceptions.RequestException):
     st.caption("Ensure the API server is running (default: http://localhost:4000).")
 
 
+def current_assignable_role(access_data: dict):
+    """Single ADVISOR/STUDENT/EMPLOYER row from access payload (priority: advisor, student, employer)."""
+    if not access_data:
+        return None
+    if access_data.get("advisor"):
+        return "ADVISOR"
+    if access_data.get("student"):
+        return "STUDENT"
+    if access_data.get("employer"):
+        return "EMPLOYER"
+    return None
+
+
+def default_assign_payload(role_type: str, admin_id: int) -> dict:
+    """Minimal POST body for POST /admin/users/{id}/access after a role swap."""
+    payload = {"roleType": role_type, "adminId": admin_id}
+    if role_type == "ADVISOR":
+        payload["department"] = ""
+    elif role_type == "STUDENT":
+        payload.update({"major": "Undeclared", "GPA": 0.0, "gradYear": 2027})
+    else:
+        payload.update({"companyId": 1, "jobTitle": ""})
+    return payload
+
+
 API = os.getenv("API_BASE_URL", "http://localhost:4000")
 
 st.set_page_config(layout="wide", page_icon=PAGE_ICON)
@@ -118,11 +143,22 @@ if user_row and access_row:
             st.caption("**Role tags:** (none)")
 
     with st.expander("Edit account profile", expanded=False):
+        _role_opts = ["STUDENT", "ADVISOR", "EMPLOYER"]
+        _cur_assign = current_assignable_role(access_row)
+        _default_role_idx = (
+            _role_opts.index(_cur_assign) if _cur_assign in _role_opts else 0
+        )
         with st.form("edit_user_profile"):
             ef = st.text_input("First name", value=user_row.get("firstName") or "")
             el = st.text_input("Last name", value=user_row.get("lastName") or "")
             ee = st.text_input("Email", value=user_row.get("email") or "")
-            ep = st.text_input("New password (leave blank to keep)", type="password")
+            er = st.selectbox(
+                "Role Assigned",
+                _role_opts,
+                index=_default_role_idx,
+                key=f"edit_profile_role_assigned_{uid}",
+                help="Changing role revokes the previous STUDENT/ADVISOR/EMPLOYER assignment and assigns the selected one with placeholder fields you can edit below.",
+            )
             es = st.selectbox(
                 "Account status",
                 ["active", "suspended"],
@@ -137,8 +173,6 @@ if user_row and access_row:
                     payload["lastName"] = el
                 if ee:
                     payload["email"] = ee
-                if ep:
-                    payload["password"] = ep
                 payload["accountStatus"] = es
                 try:
                     r = api_request(
@@ -146,14 +180,61 @@ if user_row and access_row:
                         f"{API}/admin/users/{uid}",
                         json=payload,
                     )
-                    if r.status_code == 200:
+                    if r.status_code != 200:
+                        st.error(f"Update failed: {r.text}")
+                    else:
                         st.success("Profile updated.")
+                        old_assign = current_assignable_role(access_row)
+                        role_changed = er != old_assign
+                        if role_changed:
+                            if old_assign:
+                                dr = api_request(
+                                    "DELETE",
+                                    f"{API}/admin/users/{uid}/access",
+                                    params={
+                                        "roleType": old_assign,
+                                        "adminId": admin_id,
+                                    },
+                                )
+                                if dr.status_code != 200:
+                                    st.error(
+                                        f"Could not revoke previous role ({old_assign}): {dr.text}"
+                                    )
+                                else:
+                                    pr = api_request(
+                                        "POST",
+                                        f"{API}/admin/users/{uid}/access",
+                                        json=default_assign_payload(er, admin_id),
+                                    )
+                                    if pr.status_code not in [200, 201]:
+                                        st.warning(
+                                            f"Profile saved but role assignment failed: {pr.text}"
+                                        )
+                                    else:
+                                        st.success(
+                                            f"Role changed to **{er}**. Adjust details under **Edit existing role fields** if needed."
+                                        )
+                            else:
+                                pr = api_request(
+                                    "POST",
+                                    f"{API}/admin/users/{uid}/access",
+                                    json=default_assign_payload(er, admin_id),
+                                )
+                                if pr.status_code not in [200, 201]:
+                                    st.warning(
+                                        f"Profile saved but role assignment failed: {pr.text}"
+                                    )
+                                else:
+                                    st.success(
+                                        f"Assigned role **{er}**. Adjust details under **Edit existing role fields** if needed."
+                                    )
                         ur = api_request("GET", f"{API}/admin/users/{uid}")
+                        ar = api_request("GET", f"{API}/admin/users/{uid}/access")
                         if ur.status_code == 200:
                             st.session_state["_role_access_user_payload"] = ur.json()
+                        if ar.status_code == 200:
+                            st.session_state["_role_access_access_payload"] = ar.json()
                         st.rerun()
-                    else:
-                        st.error(f"Update failed: {r.text}")
                 except requests.exceptions.RequestException as e:
                     api_error_banner(e)
 
