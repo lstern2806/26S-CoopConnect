@@ -136,15 +136,41 @@ with tab_mutate:
 
         if colu2.button("Delete user"):
             try:
-                resp = api_request(
-                    "DELETE",
-                    f"{API}/admin/users/{int(target_id)}",
-                    params={"adminId": admin_id},
-                )
-                if resp.status_code == 200:
-                    st.success("User deleted.")
-                    st.rerun()
+                tid = int(target_id)
+                access_resp = api_request("GET", f"{API}/admin/users/{tid}/access")
+                if access_resp.status_code == 200:
+                    access_data = access_resp.json()
+                    role_map = [
+                        ("advisor", "ADVISOR"),
+                        ("student", "STUDENT"),
+                        ("employer", "EMPLOYER"),
+                    ]
+                    revoke_failed = False
+                    for key, role_type in role_map:
+                        if access_data.get(key):
+                            rev = api_request(
+                                "DELETE",
+                                f"{API}/admin/users/{tid}/access",
+                                json={"roleType": role_type, "adminId": admin_id},
+                            )
+                            if rev.status_code != 200:
+                                st.error(f"Could not revoke {role_type} role before deletion.")
+                                revoke_failed = True
+                                break
+                    if not revoke_failed:
+                        resp = api_request(
+                            "DELETE",
+                            f"{API}/admin/users/{tid}",
+                            params={"adminId": admin_id},
+                        )
+                        if resp.status_code == 200:
+                            st.success("User deleted.")
+                            st.rerun()
+                        else:
+                            st.error(f"Delete failed: {resp.text}")
+                elif access_resp.status_code == 404:
+                    st.error("User not found.")
                 else:
-                    st.error(f"Delete failed: {resp.text}")
+                    st.error(f"Could not check user roles: {access_resp.text}")
             except requests.exceptions.RequestException as e:
                 api_error_banner(e)

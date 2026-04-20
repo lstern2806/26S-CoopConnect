@@ -239,8 +239,15 @@ def user_access(user_id):
                 result[key] = cursor.fetchone()
             return jsonify(result), 200
 
-        data = request.get_json() or {}
-        role_type = (data.get("roleType") or request.args.get("roleType", "")).upper()
+        data = {}
+        if request.method == "DELETE":
+            data = request.get_json(silent=True) or {}
+            role_type = (request.args.get("roleType") or data.get("roleType", "")).upper()
+            admin_id_val = request.args.get("adminId") or data.get("adminId", DEFAULT_ADMIN_ID)
+        else:
+            data = request.get_json() or {}
+            role_type = (data.get("roleType") or request.args.get("roleType", "")).upper()
+            admin_id_val = data.get("adminId", request.args.get("adminId", DEFAULT_ADMIN_ID))
         if role_type not in ALLOWED_ACCESS_ROLES:
             return jsonify({"error": f"roleType must be one of: {ALLOWED_ACCESS_ROLES}"}), 400
 
@@ -283,7 +290,12 @@ def user_access(user_id):
                 return jsonify({"error": f"User does not currently have {role_type} access"}), 404
             action, msg = "DELETE", f"{role_type} access removed successfully"
 
-        add_audit_log(data.get("adminId", DEFAULT_ADMIN_ID), action, f"{action.title()} {role_type} access for user {user_id}", f"ACCESS:{user_id}")
+        add_audit_log(
+            admin_id_val,
+            action,
+            f"{action.title()} {role_type} access for user {user_id}",
+            f"ACCESS:{user_id}",
+        )
         get_db().commit()
         return jsonify({"message": msg}), 200 if request.method != "POST" else 201
     except Error as e:
