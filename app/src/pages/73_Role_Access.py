@@ -1,38 +1,15 @@
 """Role Access — structured account view and editing (Streamlit admin)."""
 
 import logging
-import os
 
 import requests
 import streamlit as st
 
+from modules.api import API_BASE_URL as API
+from modules.api import api_error_banner, api_request, response_error_message
 from modules.nav import PAGE_ICON, SideBarLinks
 
 logger = logging.getLogger(__name__)
-
-
-def api_request(method: str, url: str, **kwargs):
-    """Perform HTTP request with consistent timeout; return response or raise."""
-    return requests.request(method, url, timeout=10, **kwargs)
-
-
-def api_error_banner(exc: requests.exceptions.RequestException):
-    st.error(f"Error connecting to the API: {exc}")
-    st.caption("Ensure the API server is running (default: http://localhost:4000).")
-
-
-def response_error_message(resp: requests.Response) -> str:
-    """Return a readable API error, handling JSON and HTML fallback bodies."""
-    try:
-        payload = resp.json()
-        if isinstance(payload, dict):
-            return str(payload.get("error") or payload.get("message") or payload)
-        return str(payload)
-    except ValueError:
-        raw_text = (resp.text or "").strip()
-        if "<!doctype html" in raw_text.lower():
-            return f"HTTP {resp.status_code}: {resp.reason}"
-        return raw_text or f"HTTP {resp.status_code}: request failed"
 
 
 def current_assignable_role(access_data: dict):
@@ -59,8 +36,6 @@ def default_assign_payload(role_type: str, admin_id: int) -> dict:
         payload.update({"companyId": 1, "jobTitle": ""})
     return payload
 
-
-API = os.getenv("API_BASE_URL", "http://localhost:4000")
 
 st.set_page_config(layout="wide", page_icon=PAGE_ICON)
 SideBarLinks()
@@ -90,9 +65,9 @@ if st.session_state.pop("_role_access_autoload", False):
             st.session_state["_role_access_user_payload"] = _ur.json()
             st.session_state["_role_access_access_payload"] = _ar.json()
         elif _ur.status_code != 200:
-            st.error(f"Could not load user {_auid}: {_ur.text}")
+            st.error(f"Could not load user {_auid}: {response_error_message(_ur)}")
         else:
-            st.error(f"Could not load access for {_auid}: {_ar.text}")
+            st.error(f"Could not load access for {_auid}: {response_error_message(_ar)}")
     except requests.exceptions.RequestException as e:
         api_error_banner(e)
 
@@ -121,9 +96,9 @@ if load_clicked:
         u_resp = api_request("GET", f"{API}/admin/users/{uid}")
         a_resp = api_request("GET", f"{API}/admin/users/{uid}/access")
         if u_resp.status_code != 200:
-            st.error(f"Could not load user: {u_resp.text}")
+            st.error(f"Could not load user: {response_error_message(u_resp)}")
         elif a_resp.status_code != 200:
-            st.error(f"Could not load access: {a_resp.text}")
+            st.error(f"Could not load access: {response_error_message(a_resp)}")
         else:
             st.session_state["_role_access_user_payload"] = u_resp.json()
             st.session_state["_role_access_access_payload"] = a_resp.json()
@@ -195,7 +170,7 @@ if user_row and access_row:
                     json=payload,
                 )
                 if r.status_code != 200:
-                    st.error(f"Update failed: {r.text}")
+                    st.error(f"Update failed: {response_error_message(r)}")
                 else:
                     st.success("Profile updated.")
                     old_assign = current_assignable_role(access_row)
@@ -273,7 +248,6 @@ if user_row and access_row:
                 for i, (k, v) in enumerate(row.items()):
                     cols[i % ncols].markdown(f"**{k}**\n\n`{v}`")
 
-    # Inline edit existing role (STUDENT / ADVISOR / EMPLOYER only — API limitation)
     existing_assignable = []
     if access_row.get("advisor"):
         existing_assignable.append("ADVISOR")
@@ -317,7 +291,7 @@ if user_row and access_row:
                                 st.session_state["_role_access_access_payload"] = ar.json()
                             st.rerun()
                         else:
-                            st.error(r.text)
+                            st.error(f"Update failed: {response_error_message(r)}")
                     except requests.exceptions.RequestException as e:
                         api_error_banner(e)
 
@@ -370,7 +344,7 @@ if user_row and access_row:
                                 st.session_state["_role_access_access_payload"] = ar.json()
                             st.rerun()
                         else:
-                            st.error(r.text)
+                            st.error(f"Update failed: {response_error_message(r)}")
                     except requests.exceptions.RequestException as e:
                         api_error_banner(e)
 
@@ -407,7 +381,7 @@ if user_row and access_row:
                                 st.session_state["_role_access_access_payload"] = ar.json()
                             st.rerun()
                         else:
-                            st.error(r.text)
+                            st.error(f"Update failed: {response_error_message(r)}")
                     except requests.exceptions.RequestException as e:
                         api_error_banner(e)
 

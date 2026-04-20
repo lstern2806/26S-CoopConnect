@@ -1,28 +1,18 @@
 """User Management — browse, create, update, and delete users (admin)."""
 
 import logging
-import os
 
 import pandas as pd
 import requests
 import streamlit as st
 
+from modules.api import API_BASE_URL as API
+from modules.api import api_error_banner, api_request, response_error_message
 from modules.nav import PAGE_ICON, SideBarLinks
 
 logger = logging.getLogger(__name__)
 
-API = os.getenv("API_BASE_URL", "http://localhost:4000")
 admin_id = st.session_state.get("admin_id", 1)
-
-
-def api_request(method: str, url: str, **kwargs):
-    return requests.request(method, url, timeout=10, **kwargs)
-
-
-def api_error_banner(exc: requests.exceptions.RequestException):
-    st.error(f"Error connecting to the API: {exc}")
-    st.caption("Ensure the API server is running (default: http://localhost:4000).")
-
 
 st.set_page_config(layout="wide", page_icon=PAGE_ICON)
 SideBarLinks()
@@ -68,7 +58,7 @@ with tab_browse:
             else:
                 st.info("No users match your filters.")
         else:
-            st.error(f"Could not load users: {list_resp.text}")
+            st.error(f"Could not load users: {response_error_message(list_resp)}")
     except requests.exceptions.RequestException as e:
         api_error_banner(e)
 
@@ -97,7 +87,7 @@ with tab_create:
                         st.success("User created.")
                         st.rerun()
                     else:
-                        st.error(f"Create failed: {resp.text}")
+                        st.error(f"Create failed: {response_error_message(resp)}")
                 except requests.exceptions.RequestException as e:
                     api_error_banner(e)
 
@@ -130,7 +120,7 @@ with tab_mutate:
                     st.success("User updated.")
                     st.rerun()
                 else:
-                    st.error(f"Update failed: {resp.text}")
+                    st.error(f"Update failed: {response_error_message(resp)}")
             except requests.exceptions.RequestException as e:
                 api_error_banner(e)
 
@@ -154,7 +144,7 @@ with tab_mutate:
                                 json={"roleType": role_type, "adminId": admin_id},
                             )
                             if rev.status_code != 200:
-                                st.error(f"Could not revoke {role_type} role before deletion.")
+                                st.error(f"Could not revoke {role_type} role before deletion: {response_error_message(rev)}")
                                 revoke_failed = True
                                 break
                     if not revoke_failed:
@@ -167,10 +157,10 @@ with tab_mutate:
                             st.success("User deleted.")
                             st.rerun()
                         else:
-                            st.error(f"Delete failed: {resp.text}")
+                            st.error(f"Delete failed: {response_error_message(resp)}")
                 elif access_resp.status_code == 404:
                     st.error("User not found.")
                 else:
-                    st.error(f"Could not check user roles: {access_resp.text}")
+                    st.error(f"Could not check user roles: {response_error_message(access_resp)}")
             except requests.exceptions.RequestException as e:
                 api_error_banner(e)

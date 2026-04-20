@@ -1,29 +1,17 @@
 """Admin Dashboard — KPIs and interactive charts."""
 
 import logging
-import os
 from datetime import date, timedelta
 
 import pandas as pd
 import plotly.express as px
-import requests
 import streamlit as st
 
+from modules.api import API_BASE_URL as API
+from modules.api import api_error_banner, api_request, response_error_message
 from modules.nav import PAGE_ICON, SideBarLinks
 
 logger = logging.getLogger(__name__)
-
-API = os.getenv("API_BASE_URL", "http://localhost:4000")
-
-
-def api_request(method: str, url: str, **kwargs):
-    return requests.request(method, url, timeout=10, **kwargs)
-
-
-def api_error_banner(exc: requests.exceptions.RequestException):
-    st.error(f"Error connecting to the API: {exc}")
-    st.caption("Ensure the API server is running (default: http://localhost:4000).")
-
 
 st.set_page_config(layout="wide", page_icon=PAGE_ICON)
 SideBarLinks()
@@ -34,7 +22,7 @@ st.caption("High-level platform health, role mix, audit activity, and student di
 try:
     resp = api_request("GET", f"{API}/admin/dashboards/admin-kpis")
     if resp.status_code != 200:
-        st.error(f"Could not load admin KPIs: {resp.text}")
+        st.error(f"Could not load admin KPIs: {response_error_message(resp)}")
     else:
         kpi = resp.json()
 
@@ -129,7 +117,7 @@ try:
             else:
                 st.info("No audit log activity in the last 30 days.")
         else:
-            st.warning(f"Audit activity chart unavailable: {audit_resp.text}")
+            st.warning(f"Audit activity chart unavailable: {response_error_message(audit_resp)}")
 
         stats_resp = api_request("GET", f"{API}/admin/dashboards/student-stats")
         if stats_resp.status_code == 200:
@@ -165,7 +153,7 @@ try:
                     else:
                         st.info("No graduation year data.")
         else:
-            st.warning(f"Student stats unavailable: {stats_resp.text}")
+            st.warning(f"Student stats unavailable: {response_error_message(stats_resp)}")
 
 except requests.exceptions.RequestException as e:
     api_error_banner(e)

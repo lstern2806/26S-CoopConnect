@@ -1,29 +1,30 @@
+"""System Settings — view, add, update, and delete platform settings (admin)."""
+
 import logging
-import os
 
 import requests
 import streamlit as st
 
+from modules.api import API_BASE_URL as API
+from modules.api import api_error_banner, api_request, response_error_message
 from modules.nav import PAGE_ICON, SideBarLinks
 
 logger = logging.getLogger(__name__)
 
 st.set_page_config(layout="wide", page_icon=PAGE_ICON)
 SideBarLinks()
-API = os.getenv("API_BASE_URL", "http://localhost:4000")
 admin_id = st.session_state.get("admin_id", 1)
 
 st.title("System Settings")
 
 try:
-    resp = requests.get(f"{API}/admin/system-settings", timeout=10)
+    resp = api_request("GET", f"{API}/admin/system-settings")
     if resp.status_code == 200:
         st.dataframe(resp.json(), use_container_width=True)
     else:
-        st.error(f"Could not load settings: {resp.text}")
+        st.error(f"Could not load settings: {response_error_message(resp)}")
 except requests.exceptions.RequestException as e:
-    st.error(f"Error connecting to the API: {str(e)}")
-    st.info("Please ensure the API server is running on http://localhost:4000")
+    api_error_banner(e)
 
 with st.form("add_setting"):
     name = st.text_input("Setting name")
@@ -38,15 +39,14 @@ with st.form("add_setting"):
             "settingDescription": description,
         }
         try:
-            add_resp = requests.post(f"{API}/admin/system-settings", json=payload, timeout=10)
+            add_resp = api_request("POST", f"{API}/admin/system-settings", json=payload)
             if add_resp.status_code == 201:
                 st.success("Setting added.")
                 st.rerun()
             else:
-                st.error(f"Add failed: {add_resp.text}")
+                st.error(f"Add failed: {response_error_message(add_resp)}")
         except requests.exceptions.RequestException as e:
-            st.error(f"Error connecting to the API: {str(e)}")
-            st.info("Please ensure the API server is running on http://localhost:4000")
+            api_error_banner(e)
 
 setting_id = st.number_input("Setting ID", min_value=1, step=1)
 new_value = st.text_input("New value")
@@ -59,24 +59,22 @@ if col1.button("Update Setting"):
     if new_desc:
         payload["settingDescription"] = new_desc
     try:
-        upd_resp = requests.put(f"{API}/admin/system-settings/{int(setting_id)}", json=payload, timeout=10)
+        upd_resp = api_request("PUT", f"{API}/admin/system-settings/{int(setting_id)}", json=payload)
         if upd_resp.status_code == 200:
             st.success("Setting updated.")
             st.rerun()
         else:
-            st.error(f"Update failed: {upd_resp.text}")
+            st.error(f"Update failed: {response_error_message(upd_resp)}")
     except requests.exceptions.RequestException as e:
-        st.error(f"Error connecting to the API: {str(e)}")
-        st.info("Please ensure the API server is running on http://localhost:4000")
+        api_error_banner(e)
 
 if col2.button("Delete Setting"):
     try:
-        del_resp = requests.delete(f"{API}/admin/system-settings/{int(setting_id)}", params={"adminId": admin_id}, timeout=10)
+        del_resp = api_request("DELETE", f"{API}/admin/system-settings/{int(setting_id)}", params={"adminId": admin_id})
         if del_resp.status_code == 200:
             st.success("Setting deleted.")
             st.rerun()
         else:
-            st.error(f"Delete failed: {del_resp.text}")
+            st.error(f"Delete failed: {response_error_message(del_resp)}")
     except requests.exceptions.RequestException as e:
-        st.error(f"Error connecting to the API: {str(e)}")
-        st.info("Please ensure the API server is running on http://localhost:4000")
+        api_error_banner(e)
