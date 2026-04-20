@@ -452,7 +452,11 @@ if user_row and access_row:
                     st.session_state["_role_access_access_payload"] = ar.json()
                 st.rerun()
             else:
-                st.error(f"Assign failed: {resp.text}")
+                try:
+                    err_msg = resp.json().get("error", resp.text)
+                except Exception:
+                    err_msg = resp.text
+                st.error(f"Error: {err_msg}")
         except requests.exceptions.RequestException as e:
             api_error_banner(e)
 

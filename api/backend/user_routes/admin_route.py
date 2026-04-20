@@ -246,8 +246,9 @@ def user_access(user_id):
 
         if request.method == "POST":
             counts = role_counts(cursor, user_id)
-            if any(counts[k] > 0 for k in counts):
-                return jsonify({"error": "User already has a system access assignment"}), 409
+            existing = [k.replace("_rows", "").upper() for k in counts if counts[k] > 0]
+            if existing:
+                return jsonify({"error": f"User already has {existing[0]} Role Assigned"}), 409
             if role_type == "ADVISOR":
                 cursor.execute("INSERT INTO ADVISOR (userId, department) VALUES (%s, %s)", (user_id, data.get("department")))
             elif role_type == "STUDENT":
